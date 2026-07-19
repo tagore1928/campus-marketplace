@@ -2,7 +2,7 @@ import multer from 'multer';
 import sharp from 'sharp';
 import { Request, Response, NextFunction } from 'express';
 import { cloudinary, isCloudinaryConfigured } from '../config/cloudinary';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -73,7 +73,7 @@ export const handleImageUpload = async (req: UploadRequest, res: Response, next:
         req.processedImages.push(result.secure_url);
       } else {
         // Local Fallback Storage
-        const fileName = `${uuidv4()}.webp`;
+        const fileName = `${randomUUID()}.webp`;
         const uploadDir = path.join(process.cwd(), 'public', 'uploads');
         if (!fs.existsSync(uploadDir)) {
           fs.mkdirSync(uploadDir, { recursive: true });
