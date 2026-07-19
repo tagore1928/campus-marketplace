@@ -17,7 +17,7 @@ export const Auth: React.FC = () => {
   const navigate = useNavigate();
   const { login, register, loginWithGoogle } = useAuth();
 
-  const [isLogin, setIsLogin] = useState(true);
+  const [isLogin, setIsLogin] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -25,6 +25,7 @@ export const Auth: React.FC = () => {
   const [college, setCollege] = useState(PREDEFINED_COLLEGES[0]);
   const [customCollege, setCustomCollege] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -53,20 +54,25 @@ export const Auth: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSuccess(null);
     setLoading(true);
 
     try {
       if (isLogin) {
         await login(email, password);
+        // Successful login redirects to Home page
+        navigate('/');
       } else {
         const finalCollegeName = getSelectedCollege();
         if (!name.trim()) {
           throw new Error('Name is required.');
         }
         await register(email, password, name.trim(), finalCollegeName, isCustom);
+        // On successful registration, prompt to verify and log in
+        setSuccess("Registration successful! We've sent a verification email to your campus email address. Please click the link to verify your email, then sign in below.");
+        setIsLogin(true);
+        setPassword('');
       }
-      // Successful registration or login redirects to Home page
-      navigate('/');
     } catch (err: any) {
       setError(err.message || 'An error occurred during authentication.');
     } finally {
@@ -76,6 +82,7 @@ export const Auth: React.FC = () => {
 
   const handleGoogleLogin = async () => {
     setError(null);
+    setSuccess(null);
     setLoading(true);
     try {
       await loginWithGoogle();
@@ -131,6 +138,13 @@ export const Auth: React.FC = () => {
             {error && (
               <div className="mb-4 p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/30 text-rose-600 dark:text-rose-400 text-xs font-bold leading-normal">
                 {error}
+              </div>
+            )}
+
+            {/* Success Message */}
+            {success && (
+              <div className="mb-4 p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold leading-normal">
+                {success}
               </div>
             )}
 
@@ -255,6 +269,7 @@ export const Auth: React.FC = () => {
                 onClick={() => {
                   setIsLogin(!isLogin);
                   setError(null);
+                  setSuccess(null);
                 }}
                 className="text-brand-600 dark:text-brand-400 font-bold hover:underline cursor-pointer"
               >

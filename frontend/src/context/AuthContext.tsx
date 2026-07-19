@@ -6,7 +6,8 @@ import {
   createUserWithEmailAndPassword,
   signInWithPopup,
   signOut,
-  updateProfile
+  updateProfile,
+  sendEmailVerification
 } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase';
 import axios from 'axios';
@@ -93,6 +94,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setLoading(true);
       if (currentUser) {
+        // Enforce email verification (except for admin account)
+        if (!currentUser.emailVerified && currentUser.email !== 'campusmarketadmin@gmail.com') {
+          setUser(null);
+          setProfile(null);
+          setToken(null);
+          syncAxiosToken(null);
+          setLoading(false);
+          return;
+        }
         try {
           setUser(currentUser);
           const currentToken = await currentUser.getIdToken();
@@ -118,6 +128,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setLoading(true);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      
+      // Enforce email verification check
+      if (!userCredential.user.emailVerified && userCredential.user.email !== 'campusmarketadmin@gmail.com') {
+        await signOut(auth);
+        throw new Error('Your email address is not verified yet. Please check your inbox and verify your email before logging in.');
+      }
+
       const currentToken = await userCredential.user.getIdToken();
       setToken(currentToken);
       await syncProfileData(userCredential.user, currentToken);
@@ -146,11 +163,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // Update displayName
       await updateProfile(userCredential.user, { displayName: name });
       
+      // Send verification email
+      await sendEmailVerification(userCredential.user);
+      
       const currentToken = await userCredential.user.getIdToken();
-      setToken(currentToken);
       
       // Send onboarding details to Express database
       await syncProfileData(userCredential.user, currentToken, { college, isCustomCollege });
+      
+      // Sign out immediately so that the user is not automatically logged in
+      await signOut(auth);
     } catch (error: any) {
       console.error('Registration error:', error);
       throw new Error(error.message || 'Failed to complete registration.');
