@@ -1,0 +1,269 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
+import { Sparkles, ArrowRight, ShieldCheck, Mail, Lock, User, School, Chrome } from 'lucide-react';
+
+const PREDEFINED_COLLEGES = [
+  'IIT Bombay',
+  'IIT Delhi',
+  'BITS Pilani',
+  'VIT Vellore',
+  'RV College of Engineering',
+  'Other / Enter Custom...'
+];
+
+export const Auth: React.FC = () => {
+  const navigate = useNavigate();
+  const { login, register, loginWithGoogle } = useAuth();
+
+  const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [collegesList, setCollegesList] = useState<string[]>(PREDEFINED_COLLEGES);
+  const [college, setCollege] = useState(PREDEFINED_COLLEGES[0]);
+  const [customCollege, setCustomCollege] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchColleges = async () => {
+      try {
+        const res = await axios.get('/api/auth/colleges');
+        const list = [...res.data, 'Other / Enter Custom...'];
+        setCollegesList(list);
+        setCollege(list[0]);
+      } catch (err) {
+        console.error('Error loading colleges registry:', err);
+      }
+    };
+    fetchColleges();
+  }, []);
+
+  const getSelectedCollege = () => {
+    if (college === 'Other / Enter Custom...') {
+      return customCollege.trim() || 'Custom College';
+    }
+    return college;
+  };
+
+  const isCustom = college === 'Other / Enter Custom...';
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    try {
+      if (isLogin) {
+        await login(email, password);
+      } else {
+        const finalCollegeName = getSelectedCollege();
+        if (!name.trim()) {
+          throw new Error('Name is required.');
+        }
+        await register(email, password, name.trim(), finalCollegeName, isCustom);
+      }
+      // Successful registration or login redirects to Home page
+      navigate('/');
+    } catch (err: any) {
+      setError(err.message || 'An error occurred during authentication.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      await loginWithGoogle();
+      navigate('/');
+    } catch (err: any) {
+      setError(err.message || 'Google Auth failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen w-full flex items-center justify-center bg-slate-50 dark:bg-dark-bg p-4 md:p-8 transition-colors">
+      <div className="w-full max-w-5xl grid md:grid-cols-12 gap-8 md:gap-0 bg-white dark:bg-dark-surface rounded-3xl overflow-hidden shadow-2xl border border-light-border dark:border-dark-border">
+        {/* Banner Column */}
+        <div className="md:col-span-5 bg-gradient-to-br from-brand-700 via-brand-600 to-accent-pink p-8 md:p-12 text-white flex flex-col justify-between relative overflow-hidden">
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:24px_24px]" />
+          
+          <div className="relative z-10 flex items-center gap-3">
+            <div className="bg-white/20 p-2.5 rounded-2xl backdrop-blur-md">
+              <Sparkles className="w-6 h-6 text-white" />
+            </div>
+            <span className="font-extrabold text-xl tracking-tight">Campus Market</span>
+          </div>
+
+          <div className="relative z-10 my-12 md:my-0">
+            <h2 className="text-3xl md:text-4xl font-extrabold leading-tight tracking-tight mb-4">
+              Trade items within your campus securely.
+            </h2>
+            <p className="text-brand-100 font-medium text-sm md:text-base leading-relaxed">
+              Join your college marketplace. Sell textbooks, request free sharing, trade dorm furniture, and check trust reviews instantly.
+            </p>
+          </div>
+
+          <div className="relative z-10 flex items-center gap-2 text-xs font-semibold text-brand-200">
+            <ShieldCheck className="w-4 h-4 text-emerald-300" />
+            <span>Exclusive to .edu.in domains</span>
+          </div>
+        </div>
+
+        {/* Form Column */}
+        <div className="md:col-span-7 p-8 md:p-12 flex flex-col justify-center">
+          <div className="max-w-md w-full mx-auto">
+            {/* Header */}
+            <h3 className="text-2xl font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">
+              {isLogin ? 'Sign In' : 'Create Campus Account'}
+            </h3>
+            <p className="text-sm font-semibold text-slate-400 mt-1.5 mb-6">
+              {isLogin ? "Welcome back! Enter credentials to join." : "Verify domain & college to register."}
+            </p>
+
+            {/* Error Message */}
+            {error && (
+              <div className="mb-4 p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/30 text-rose-600 dark:text-rose-400 text-xs font-bold leading-normal">
+                {error}
+              </div>
+            )}
+
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              {!isLogin && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Your Name</label>
+                  <div className="relative">
+                    <User className="w-4 h-4 text-slate-400 absolute left-4 top-3.5" />
+                    <input
+                      type="text"
+                      placeholder="Jane Doe"
+                      required
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-light-border dark:border-dark-border rounded-xl text-slate-850 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm font-semibold transition-all"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">College Email</label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-4 top-3.5" />
+                  <input
+                    type="email"
+                    placeholder="email@college.edu.in"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-light-border dark:border-dark-border rounded-xl text-slate-850 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm font-semibold transition-all"
+                  />
+                </div>
+                {!isLogin && (
+                  <p className="text-[10px] font-bold text-slate-400 mt-0.5">Domain must strictly end with <span className="text-brand-500">.edu.in</span></p>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Password</label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-4 top-3.5" />
+                  <input
+                    type="password"
+                    placeholder="••••••••"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-light-border dark:border-dark-border rounded-xl text-slate-850 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm font-semibold transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* College Dropdown / Manual Input */}
+              {!isLogin && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Select College</label>
+                  <div className="relative">
+                    <School className="w-4 h-4 text-slate-400 absolute left-4 top-3.5 font-bold" />
+                    <select
+                      value={college}
+                      onChange={(e) => setCollege(e.target.value)}
+                      className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-light-border dark:border-dark-border rounded-xl text-slate-850 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm font-semibold cursor-pointer transition-all"
+                    >
+                      {collegesList.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {isCustom && (
+                    <input
+                      type="text"
+                      placeholder="Enter custom college name"
+                      required
+                      value={customCollege}
+                      onChange={(e) => setCustomCollege(e.target.value)}
+                      className="w-full px-4 py-3 mt-1 bg-slate-50 dark:bg-slate-800 border border-light-border dark:border-dark-border rounded-xl text-slate-850 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm font-semibold fade-in transition-all"
+                    />
+                  )}
+                </div>
+              )}
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full mt-2 py-3 bg-brand-600 hover:bg-brand-700 disabled:bg-slate-400 text-white rounded-xl font-bold text-sm shadow-md shadow-brand-500/10 flex items-center justify-center gap-2 cursor-pointer transition-all duration-200"
+              >
+                {loading ? 'Authenticating...' : isLogin ? 'Sign In' : 'Create Account'}
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </form>
+
+            {/* Divider */}
+            <div className="flex items-center my-6">
+              <div className="flex-1 h-px bg-light-border dark:border-dark-border" />
+              <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400 px-3">or continue with</span>
+              <div className="flex-1 h-px bg-light-border dark:border-dark-border" />
+            </div>
+
+            {/* Google Sign In */}
+            <div className="flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={handleGoogleLogin}
+                disabled={loading}
+                className="w-full py-3 border border-light-border dark:border-dark-border bg-white dark:bg-dark-surface hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-bold text-sm flex items-center justify-center gap-2.5 cursor-pointer shadow-sm transition-all duration-200"
+              >
+                <Chrome className="w-4 h-4 text-brand-600" />
+                Sign In with Google
+              </button>
+            </div>
+
+            {/* Toggle form link */}
+            <p className="text-center text-xs font-semibold text-slate-400 mt-8">
+              {isLogin ? "Don't have a campus account? " : "Already have an account? "}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsLogin(!isLogin);
+                  setError(null);
+                }}
+                className="text-brand-600 dark:text-brand-400 font-bold hover:underline cursor-pointer"
+              >
+                {isLogin ? 'Register now' : 'Sign in here'}
+              </button>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};

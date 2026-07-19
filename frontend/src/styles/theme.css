@@ -1,0 +1,36 @@
+/* src/styles/theme.css */
+:root {
+  /* Gradient palette */
+  --primary-h: 220;
+  --primary-s: 90%;
+  --primary-l: 55%;
+  --secondary-h: 340;
+  --secondary-s: 70%;
+  --secondary-l: 55%;
+  --accent-h: 50;
+  --accent-s: 90%;
+  --accent-l: 55%;
+  /* Derived colors */
+  --primary: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+  --primary-dark: hsl(var(--primary-h), var(--primary-s), calc(var(--primary-l) - 15%));
+  --secondary: hsl(var(--secondary-h), var(--secondary-s), var(--secondary-l));
+  --accent: hsl(var(--accent-h), var(--accent-s), var(--accent-l));
+  --bg-gradient: linear-gradient(135deg, var(--primary), var(--secondary));
+  --glass-bg: rgba(255, 255, 255, 0.15);
+  --glass-border: rgba(255, 255, 255, 0.3);
+  --shadow: rgba(0,0,0,0.2);
+}
+
+/* Global smooth transitions */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body {
+  background: var(--bg-gradient);
+  color: #fff;
+  font-family: 'Inter', system-ui, sans-serif;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}

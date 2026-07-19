@@ -1,0 +1,137 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: Check if user is authenticated and has a valid campus email (.edu.in) or is the admin
+    function isEmailValid() {
+      return request.auth != null && (
+        request.auth.token.email.matches('(?i).*\\.edu\\.in$') ||
+        request.auth.token.email == 'campusmarketadmin@gmail.com'
+      );
+    }
+
+    // Helper: Check if user is an admin via token claim or Firestore document role
+    function isAdmin() {
+      return request.auth != null && (
+        request.auth.token.admin == true ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+
+    // ========================
+    // USER PROFILES & SAVED LISTINGS
+    // ========================
+    match /users/{userId} {
+      // Must be authenticated and have valid email to read profile
+      allow read: if isEmailValid();
+      // Only the owner can write to their own profile, or admin can override
+      allow write: if (request.auth != null && request.auth.uid == userId && isEmailValid()) || isAdmin();
+
+      // savedProducts (saved_listings) subcollection
+      match /savedProducts/{savedId} {
+        // Only the owner of the user profile can read/write saved items
+        allow read, write: if request.auth != null && request.auth.uid == userId && isEmailValid();
+      }
+    }
+
+    // ========================
+    // COLLEGES
+    // ========================
+    match /colleges/{collegeId} {
+      // Must have valid email to browse college configs
+      allow read: if isEmailValid();
+      // Only admins can write/configure colleges
+      allow write: if isAdmin();
+    }
+
+    // ========================
+    // LISTINGS / POSTS
+    // ========================
+    match /posts/{postId} {
+      // Must have valid email to browse listings
+      allow read: if isEmailValid();
+      // Must have valid email to create listings
+      allow create: if isEmailValid();
+      // Only the listing creator or admin can update/delete
+      allow update, delete: if isEmailValid() && (
+        resource.data.creatorId == request.auth.uid || isAdmin()
+      );
+    }
+
+    // Alias for 'listings' collection
+    match /listings/{listingId} {
+      allow read: if isEmailValid();
+      allow create: if isEmailValid();
+      allow update, delete: if isEmailValid() && (
+        resource.data.creatorId == request.auth.uid || isAdmin()
+      );
+    }
+
+    // ========================
+    // CHAT ROOMS & MESSAGES
+    // ========================
+    match /chats/{chatId} {
+      // Only the buyer or seller in the chat can read the room metadata
+      allow read: if isEmailValid() && (
+        resource.data.buyerId == request.auth.uid ||
+        resource.data.sellerId == request.auth.uid
+      );
+      // Valid users can create chat rooms
+      allow create: if isEmailValid();
+      // Only participants can update room status
+      allow update: if isEmailValid() && (
+        resource.data.buyerId == request.auth.uid ||
+        resource.data.sellerId == request.auth.uid
+      );
+
+      // Messages sub-collection
+      match /messages/{messageId} {
+        // Only chat participants can read/write messages
+        allow read, create: if isEmailValid() && (
+          get(/databases/$(database)/documents/chats/$(chatId)).data.buyerId == request.auth.uid ||
+          get(/databases/$(database)/documents/chats/$(chatId)).data.sellerId == request.auth.uid
+        );
+        // Ownership Enforcement for mutating messages (update/delete)
+        allow update, delete: if isEmailValid() && (
+          resource.data.senderId == request.auth.uid
+        );
+      }
+    }
+
+    // ========================
+    // NOTIFICATIONS
+    // ========================
+    match /notifications/{notifId} {
+      // Only the target user can read/write their own notifications
+      allow read: if isEmailValid() && resource.data.userId == request.auth.uid;
+      allow update, delete: if isEmailValid() && resource.data.userId == request.auth.uid;
+      // Allow creation by valid users or backend
+      allow create: if isEmailValid();
+    }
+
+    // ========================
+    // REVIEWS / RATINGS
+    // ========================
+    match /reviews/{reviewId} {
+      // Must have valid email to read reviews
+      allow read: if isEmailValid();
+      // Must have valid email to create reviews
+      allow create: if isEmailValid();
+      // Only the buyer who wrote it can update/delete, or admin
+      allow update, delete: if isEmailValid() && (
+        resource.data.buyerId == request.auth.uid || isAdmin()
+      );
+    }
+
+    // ========================
+    // REPORTS (Admin-Only Read/Write, Users can create)
+    // ========================
+    match /reports/{reportId} {
+      // Only admins can read, update, or delete reports
+      allow read, update, delete: if isAdmin();
+      // Valid users can create reports
+      allow create: if isEmailValid();
+    }
+  }
+}

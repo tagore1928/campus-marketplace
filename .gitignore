@@ -1,0 +1,14 @@
+# Local environment files
+*.env
+*.env.*
+.env
+
+# Dependency structures
+node_modules/
+dist/
+.vercel/
+.vite/
+
+# OS artifacts
+.DS_Store
+thumbs.db
