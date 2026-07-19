@@ -6,9 +6,9 @@ Campus Market is a secure, hyper-local peer-to-peer peer marketplace and social 
 
 ## 🚀 Core Technology Stack
 
-- **Frontend**: React (v18+), Vite, Tailwind CSS, Lucide Icons, Socket.io-client, Axios, React Router Dom.
-- **Backend**: Node.js, Express, TypeScript, Socket.io, Firebase Admin SDK.
-- **Database & Services**: Firebase Firestore (primary document store), Firebase Authentication.
+- **Frontend**: React (v18+), Vite, Tailwind CSS, Lucide Icons, Firebase Client SDK (Firestore onSnapshot, Auth), Axios, React Router Dom.
+- **Backend**: Node.js, Express, TypeScript, Firebase Admin SDK (configured for serverless execution on Vercel).
+- **Database & Services**: Firebase Firestore (primary document store with client-side Firestore listeners & writes), Firebase Authentication.
 
 ---
 
@@ -26,7 +26,7 @@ Campus Market is a secure, hyper-local peer-to-peer peer marketplace and social 
 ### 3. Granular Chat Room Deletion Engine
 - **Message-Level Deletion**: Users can hover over their sent messages (or admins over any message) to delete specific text bubbles instantly.
 - **Thread-Level Deletion**: A "Delete Chat Room" button at the top header allows users to permanently wipe out the entire conversation thread and nested messages.
-- **Socket Synchronicity**: Deletion updates are propagated to peers in real-time using Socket.io live listeners.
+- **Real-Time Synchronicity**: Chat updates, message delivery, and deletion updates are propagated to peers in real-time using native Firestore `onSnapshot` listeners and direct client-side database writes.
 
 ### 4. Layout & Theme Consistency
 - **Default Light Mode**: First-time platform visitors land on a clean Light Mode theme. Manual toggle preferences are saved in `localStorage` for returning users.
@@ -52,7 +52,6 @@ Campusmarket/
 │   │   │   ├── chats.ts
 │   │   │   ├── socialFeed.ts
 │   │   │   └── ...
-│   │   ├── socket/          # Socket.io real-time chat setup
 │   │   └── app.ts           # Server initialization
 │   ├── package.json
 │   └── tsconfig.json
