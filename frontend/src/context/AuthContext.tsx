@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { 
   User as FirebaseUser,
   onAuthStateChanged,
@@ -36,7 +36,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string, college: string, isCustomCollege: boolean) => Promise<void>;
-  loginWithGoogle: (college?: string) => Promise<void>;
+  loginWithGoogle: (college?: string, isCustomCollege?: boolean) => Promise<void>;
   logout: () => Promise<void>;
   updateAnonymousMode: (enabled: boolean) => Promise<void>;
   updateProfileDetails: (name: string, college: string, isCustomCollege: boolean) => Promise<void>;
@@ -59,6 +59,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  // Ref to store college details during Google Sign-in to prevent onAuthStateChanged from creating a default profile
+  const googleOnboardingCollege = useRef<{ college: string, isCustomCollege: boolean } | null>(null);
+
   // Sync profile details from Express Backend
   const syncProfileData = async (firebaseUser: FirebaseUser, authToken: string, collegeDetail?: { college: string, isCustomCollege: boolean }) => {
     try {
@@ -72,14 +75,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (err.response && err.response.status === 404) {
           // If profile doesn't exist, create it (onboard user)
           const name = firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User';
-          const defaultCollege = collegeDetail?.college || 'IIT Bombay';
-          const isCustom = collegeDetail?.isCustomCollege || false;
+          
+          // Use provided college, or fall back to ref, or default to IIT Bombay
+          const sourceCollege = collegeDetail || googleOnboardingCollege.current;
+          const defaultCollege = sourceCollege?.college || 'IIT Bombay';
+          const isCustom = sourceCollege?.isCustomCollege || false;
 
           const registerResponse = await axios.post(`${API_URL}/auth/profile`, {
             college: defaultCollege,
             isCustomCollege: isCustom
           });
           setProfile(registerResponse.data);
+          
+          // Clear ref after consumption
+          googleOnboardingCollege.current = null;
         } else {
           throw err;
         }
@@ -182,16 +191,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // Google OAuth Onboarding
-  const loginWithGoogle = async (college?: string) => {
+  const loginWithGoogle = async (college?: string, isCustomCollege?: boolean) => {
     setLoading(true);
     try {
+      if (college) {
+        googleOnboardingCollege.current = { college, isCustomCollege: isCustomCollege ?? false };
+      }
       const result = await signInWithPopup(auth, googleProvider);
       const currentToken = await result.user.getIdToken();
       setToken(currentToken);
       
       // Onboard via google credentials
-      await syncProfileData(result.user, currentToken, college ? { college, isCustomCollege: false } : undefined);
+      await syncProfileData(
+        result.user,
+        currentToken,
+        college ? { college, isCustomCollege: isCustomCollege ?? false } : undefined
+      );
     } catch (error: any) {
+      googleOnboardingCollege.current = null;
       console.error('Google Auth Error:', error);
       throw new Error(error.message || 'Failed to authenticate via Google.');
     } finally {

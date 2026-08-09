@@ -409,5 +409,92 @@ router.delete('/audit-logs', async (req: AuthRequest, res: Response) => {
   }
 });
 
+// Aggregate platform analytics for admin dashboard
+router.get('/analytics', async (req: AuthRequest, res: Response) => {
+  try {
+    const now = new Date();
+
+    // Run all collection fetches in parallel
+    const [usersSnap, postsSnap, socialSnap, reportsSnap] = await Promise.all([
+      db.collection('users').get(),
+      db.collection('posts').get(),
+      db.collection('social_posts').get(),
+      db.collection('reports').get(),
+    ]);
+
+    const users: any[] = [];
+    usersSnap.forEach((doc) => users.push(doc.data()));
+
+    const posts: any[] = [];
+    postsSnap.forEach((doc) => posts.push(doc.data()));
+
+    const socialPosts: any[] = [];
+    socialSnap.forEach((doc) => socialPosts.push(doc.data()));
+
+    const reports: any[] = [];
+    reportsSnap.forEach((doc) => reports.push(doc.data()));
+
+    // --- Summary Totals ---
+    const totalUsers = users.length;
+    const totalListings = posts.length;
+    const totalSocialPosts = socialPosts.length;
+    const totalReports = reports.length;
+    const pendingReports = reports.filter((r) => r.status !== 'resolved').length;
+
+    // --- DAU / MAU ---
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const dau = users.filter((u) => u.updatedAt && u.updatedAt >= oneDayAgo).length;
+    const mau = users.filter((u) => u.updatedAt && u.updatedAt >= thirtyDaysAgo).length;
+
+    // --- 7-day daily growth (registrations + listings by day) ---
+    const dailyGrowth: { date: string; users: number; listings: number }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const dayStart = new Date(now);
+      dayStart.setDate(dayStart.getDate() - i);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(dayStart);
+      dayEnd.setHours(23, 59, 59, 999);
+
+      const dayStartIso = dayStart.toISOString();
+      const dayEndIso = dayEnd.toISOString();
+
+      const dayUsers = users.filter(
+        (u) => u.createdAt && u.createdAt >= dayStartIso && u.createdAt <= dayEndIso
+      ).length;
+      const dayListings = posts.filter(
+        (p) => p.createdAt && p.createdAt >= dayStartIso && p.createdAt <= dayEndIso
+      ).length;
+
+      dailyGrowth.push({
+        date: dayStart.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }),
+        users: dayUsers,
+        listings: dayListings,
+      });
+    }
+
+    // --- College distribution (non-admin users only) ---
+    const collegeCounts: Record<string, number> = {};
+    users.forEach((u) => {
+      if (u.role === 'admin') return;
+      const college = u.college || 'Unspecified';
+      collegeCounts[college] = (collegeCounts[college] || 0) + 1;
+    });
+    const collegeDistribution = Object.entries(collegeCounts)
+      .map(([college, count]) => ({ college, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10); // top 10
+
+    return res.status(200).json({
+      totals: { totalUsers, totalListings, totalSocialPosts, totalReports, pendingReports, dau, mau },
+      dailyGrowth,
+      collegeDistribution,
+    });
+  } catch (error) {
+    console.error('Error computing analytics:', error);
+    return res.status(500).json({ error: 'Internal Server Error', message: 'Failed to compute analytics.' });
+  }
+});
+
 export default router;
 

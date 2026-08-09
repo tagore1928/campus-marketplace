@@ -94,6 +94,7 @@ export const AppContent: React.FC = () => {
           <Route path="/listings/:id" element={<PostDetail />} />
           <Route path="/create-post" element={<CreatePost />} />
           <Route path="/chat" element={<Chat />} />
+          <Route path="/chat/:roomId" element={<Chat />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/profile/:uid" element={<Profile />} />
           <Route path="/about" element={<About />} />

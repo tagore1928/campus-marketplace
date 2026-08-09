@@ -324,12 +324,13 @@ export const Profile: React.FC = () => {
     }
     if (!targetProfile) return;
     try {
-      await axios.post('/api/chats', {
+      const res = await axios.post('/api/chats', {
         peerId: targetProfile.uid
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      navigate('/chat');
+      const roomId = res.data.id;
+      navigate(`/chat/${roomId}`);
     } catch (err) {
       console.error('Error starting chat thread:', err);
       alert('Failed to start chat thread.', 'Error');

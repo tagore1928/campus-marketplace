@@ -380,12 +380,13 @@ export const CampusFeed: React.FC = () => {
       return;
     }
     try {
-      await axios.post('/api/chats', {
+      const res = await axios.post('/api/chats', {
         listingId: post.id
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      navigate('/chat');
+      const roomId = res.data.id;
+      navigate(`/chat/${roomId}`);
     } catch (err) {
       console.error('Error initiating chat with post creator:', err);
       alert('Failed to start chat thread.', 'Error');

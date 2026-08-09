@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useDialog } from '../context/DialogContext';
 import axios from 'axios';
@@ -22,6 +22,7 @@ export const Chat: React.FC = () => {
   const { user, token, profile } = useAuth();
   const { confirm } = useDialog();
   const navigate = useNavigate();
+  const { roomId: urlRoomId } = useParams<{ roomId?: string }>();
   
   const [rooms, setRooms] = useState<any[]>([]);
   const [selectedRoom, setSelectedRoom] = useState<any>(null);
@@ -49,6 +50,16 @@ export const Chat: React.FC = () => {
   useEffect(() => {
     fetchChatRooms();
   }, [token]);
+
+  // Auto-select room when navigated via deep-link /chat/:roomId
+  useEffect(() => {
+    if (urlRoomId && rooms.length > 0 && !selectedRoom) {
+      const target = rooms.find((r) => r.id === urlRoomId);
+      if (target) {
+        setSelectedRoom(target);
+      }
+    }
+  }, [urlRoomId, rooms]);
 
   // Fetch messages and manage real-time updates when selectedRoom changes
   useEffect(() => {
@@ -284,7 +295,10 @@ export const Chat: React.FC = () => {
                 return (
                   <div
                     key={room.id}
-                    onClick={() => setSelectedRoom(room)}
+                    onClick={() => {
+                      setSelectedRoom(room);
+                      navigate(`/chat/${room.id}`, { replace: true });
+                    }}
                     className={`p-4 flex gap-3.5 hover:bg-slate-100/60 dark:hover:bg-slate-800/40 cursor-pointer transition-colors ${
                       isSelected ? 'bg-slate-100 dark:bg-slate-800/80 border-l-4 border-brand-600' : ''
                     }`}

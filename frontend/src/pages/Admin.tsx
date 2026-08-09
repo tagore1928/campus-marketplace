@@ -12,7 +12,9 @@ import {
   AlertTriangle,
   UserX,
   MessageSquare,
-  History
+  History,
+  BarChart2,
+  Eye
 } from 'lucide-react';
 
 export const Admin: React.FC = () => {
@@ -20,11 +22,12 @@ export const Admin: React.FC = () => {
   const { alert, confirm } = useDialog();
   const navigate = useNavigate();
   
-  const [activeTab, setActiveTab] = useState<'reports' | 'users' | 'tickets' | 'audit'>('reports');
+  const [activeTab, setActiveTab] = useState<'reports' | 'users' | 'tickets' | 'audit' | 'analytics'>('reports');
   const [reports, setReports] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [tickets, setTickets] = useState<any[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [analytics, setAnalytics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   const [revealedUsers, setRevealedUsers] = useState<Record<string, { name: string; email: string }>>({});
@@ -62,6 +65,9 @@ export const Admin: React.FC = () => {
       } else if (activeTab === 'audit') {
         const res = await axios.get('/api/admin/audit-logs');
         setAuditLogs(res.data);
+      } else if (activeTab === 'analytics') {
+        const res = await axios.get('/api/admin/analytics');
+        setAnalytics(res.data);
       }
     } catch (err) {
       console.error('Error fetching admin details:', err);
@@ -230,6 +236,17 @@ export const Admin: React.FC = () => {
           >
             <History className="w-4 h-4" />
             Audit Logs
+          </button>
+          <button
+            onClick={() => setActiveTab('analytics')}
+            className={`flex items-center gap-2 px-4.5 py-2.5 rounded-xl font-bold text-xs cursor-pointer transition-all ${
+              activeTab === 'analytics'
+                ? 'bg-white dark:bg-dark-surface text-slate-800 dark:text-white shadow-sm'
+                : 'text-slate-500 hover:text-slate-805 dark:hover:text-slate-300'
+            }`}
+          >
+            <BarChart2 className="w-4 h-4" />
+            Analytics
           </button>
         </div>
       </div>
@@ -451,20 +468,155 @@ export const Admin: React.FC = () => {
                       </span>
                     </td>
                     <td className="p-4 text-right">
-                      {u.role !== 'admin' && (
+                      <div className="flex items-center justify-end gap-1.5">
                         <button
-                          onClick={() => handleBanUser(u.uid)}
-                          className="p-2 border border-rose-200 hover:border-rose-350 bg-rose-50/50 hover:bg-rose-50 dark:bg-rose-955/20 text-rose-600 dark:text-rose-400 rounded-xl font-bold cursor-pointer transition-colors inline-flex items-center justify-center"
+                          onClick={() => navigate(`/profile/${u.uid}`)}
+                          title="Inspect Profile"
+                          className="p-2 border border-slate-200 hover:border-brand-300 bg-slate-50 hover:bg-brand-50 dark:bg-slate-800 dark:hover:bg-brand-950/20 text-slate-500 hover:text-brand-600 dark:hover:text-brand-400 rounded-xl font-bold cursor-pointer transition-colors inline-flex items-center justify-center"
                         >
-                          <UserX className="w-4 h-4" />
+                          <Eye className="w-4 h-4" />
                         </button>
-                      )}
+                        {u.role !== 'admin' && (
+                          <button
+                            onClick={() => handleBanUser(u.uid)}
+                            title="Ban User"
+                            className="p-2 border border-rose-200 hover:border-rose-350 bg-rose-50/50 hover:bg-rose-50 dark:bg-rose-955/20 text-rose-600 dark:text-rose-400 rounded-xl font-bold cursor-pointer transition-colors inline-flex items-center justify-center"
+                          >
+                            <UserX className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+        </div>
+      ) : activeTab === 'analytics' ? (
+        /* Analytics Dashboard tab */
+        <div className="flex flex-col gap-6">
+          {!analytics ? (
+            <div className="flex flex-col items-center justify-center p-20 text-slate-400">
+              <div className="w-10 h-10 border-4 border-brand-605 border-t-transparent rounded-full animate-spin mb-4" />
+              <span className="text-sm font-semibold">Crunching platform data...</span>
+            </div>
+          ) : (
+            <>
+              {/* KPI Cards */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[
+                  { label: 'Total Users', value: analytics.totals.totalUsers, color: 'text-brand-600', bg: 'bg-brand-50 dark:bg-brand-950/20' },
+                  { label: 'DAU (24h)', value: analytics.totals.dau, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-950/20' },
+                  { label: 'MAU (30d)', value: analytics.totals.mau, color: 'text-indigo-600', bg: 'bg-indigo-50 dark:bg-indigo-950/20' },
+                  { label: 'Listings', value: analytics.totals.totalListings, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950/20' },
+                  { label: 'Social Posts', value: analytics.totals.totalSocialPosts, color: 'text-pink-600', bg: 'bg-pink-50 dark:bg-pink-950/20' },
+                  { label: 'Total Reports', value: analytics.totals.totalReports, color: 'text-rose-600', bg: 'bg-rose-50 dark:bg-rose-950/20' },
+                  { label: 'Pending Reports', value: analytics.totals.pendingReports, color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-950/20' },
+                ].map((kpi) => (
+                  <div key={kpi.label} className={`${kpi.bg} border border-light-border dark:border-dark-border rounded-2xl p-4 flex flex-col gap-1 text-left`}>
+                    <span className={`text-3xl font-extrabold ${kpi.color}`}>{kpi.value}</span>
+                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{kpi.label}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* 7-Day Growth Line Chart */}
+              <div className="bg-white dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-3xl p-6 shadow-sm">
+                <h3 className="text-sm font-extrabold text-slate-800 dark:text-slate-100 mb-1">7-Day Growth</h3>
+                <p className="text-[10px] font-semibold text-slate-400 mb-5">Daily new user registrations and marketplace listings</p>
+                {(() => {
+                  const data = analytics.dailyGrowth;
+                  const maxVal = Math.max(...data.flatMap((d: any) => [d.users, d.listings]), 1);
+                  const W = 100, H = 120, pad = 8;
+                  const xStep = (W - pad * 2) / (data.length - 1);
+                  const toY = (v: number) => H - pad - ((v / maxVal) * (H - pad * 2));
+                  const userPts = data.map((d: any, i: number) => `${pad + i * xStep},${toY(d.users)}`).join(' ');
+                  const listPts = data.map((d: any, i: number) => `${pad + i * xStep},${toY(d.listings)}`).join(' ');
+                  return (
+                    <div className="flex flex-col gap-3">
+                      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" preserveAspectRatio="none" style={{ height: 140 }}>
+                        <defs>
+                          <linearGradient id="userGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#6366f1" stopOpacity="0.3" />
+                            <stop offset="100%" stopColor="#6366f1" stopOpacity="0" />
+                          </linearGradient>
+                          <linearGradient id="listGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.3" />
+                            <stop offset="100%" stopColor="#f59e0b" stopOpacity="0" />
+                          </linearGradient>
+                        </defs>
+                        {/* Grid lines */}
+                        {[0, 0.25, 0.5, 0.75, 1].map((t) => (
+                          <line key={t} x1={pad} x2={W - pad} y1={toY(maxVal * t)} y2={toY(maxVal * t)} stroke="currentColor" strokeOpacity="0.06" strokeWidth="0.5" className="text-slate-800 dark:text-slate-200" />
+                        ))}
+                        {/* Fill areas */}
+                        <polygon points={`${pad},${H - pad} ${userPts} ${pad + (data.length - 1) * xStep},${H - pad}`} fill="url(#userGrad)" />
+                        <polygon points={`${pad},${H - pad} ${listPts} ${pad + (data.length - 1) * xStep},${H - pad}`} fill="url(#listGrad)" />
+                        {/* Lines */}
+                        <polyline points={userPts} fill="none" stroke="#6366f1" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+                        <polyline points={listPts} fill="none" stroke="#f59e0b" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+                        {/* Dots */}
+                        {data.map((d: any, i: number) => (
+                          <g key={i}>
+                            <circle cx={pad + i * xStep} cy={toY(d.users)} r="2" fill="#6366f1" />
+                            <circle cx={pad + i * xStep} cy={toY(d.listings)} r="2" fill="#f59e0b" />
+                          </g>
+                        ))}
+                      </svg>
+                      {/* X-axis labels */}
+                      <div className="flex justify-between px-1">
+                        {data.map((d: any) => (
+                          <span key={d.date} className="text-[9px] font-bold text-slate-400">{d.date}</span>
+                        ))}
+                      </div>
+                      {/* Legend */}
+                      <div className="flex gap-5 mt-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-3 h-1 rounded-full bg-indigo-500 inline-block" />
+                          <span className="text-[10px] font-bold text-slate-500">New Users</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-3 h-1 rounded-full bg-amber-500 inline-block" />
+                          <span className="text-[10px] font-bold text-slate-500">New Listings</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* College Distribution Bar Chart */}
+              <div className="bg-white dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-3xl p-6 shadow-sm">
+                <h3 className="text-sm font-extrabold text-slate-800 dark:text-slate-100 mb-1">College Distribution</h3>
+                <p className="text-[10px] font-semibold text-slate-400 mb-5">Top 10 campuses by registered students</p>
+                {(() => {
+                  const data = analytics.collegeDistribution;
+                  const max = data.length > 0 ? data[0].count : 1;
+                  const colors = ['bg-brand-500','bg-indigo-500','bg-emerald-500','bg-amber-500','bg-pink-500','bg-teal-500','bg-rose-500','bg-violet-500','bg-orange-500','bg-cyan-500'];
+                  return (
+                    <div className="flex flex-col gap-3">
+                      {data.map((item: any, i: number) => (
+                        <div key={item.college} className="flex items-center gap-3">
+                          <span className="text-[10px] font-bold text-slate-500 w-36 truncate shrink-0 text-right">{item.college}</span>
+                          <div className="flex-1 h-5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full ${colors[i % colors.length]} rounded-full transition-all duration-700`}
+                              style={{ width: `${(item.count / max) * 100}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] font-extrabold text-slate-600 dark:text-slate-400 w-6 text-right">{item.count}</span>
+                        </div>
+                      ))}
+                      {data.length === 0 && (
+                        <p className="text-xs font-semibold text-slate-400 text-center py-8">No user data available yet.</p>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+            </>
+          )}
         </div>
       ) : (
         /* Audit logs tab */

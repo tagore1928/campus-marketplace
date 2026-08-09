@@ -204,8 +204,9 @@ export const PostDetail: React.FC = () => {
       return;
     }
     try {
-      await axios.post('/api/chats', { listingId: post.id });
-      navigate('/chat');
+      const res = await axios.post('/api/chats', { listingId: post.id });
+      const roomId = res.data.id;
+      navigate(`/chat/${roomId}`);
     } catch (err: any) {
       alert(err.response?.data?.message || 'Failed to initialize chat.', 'Error');
     }
