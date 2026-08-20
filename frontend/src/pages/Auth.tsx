@@ -242,7 +242,7 @@ export const Auth: React.FC = () => {
           <div className="relative z-10 flex flex-col gap-3 text-xs font-semibold text-brand-200">
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-emerald-300" />
-              <span>Exclusive to .edu.in domains</span>
+              <span>Exclusive to .edu.in or .in domains</span>
             </div>
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-emerald-300" />
@@ -301,7 +301,7 @@ export const Auth: React.FC = () => {
                   <Mail className="w-4 h-4 text-slate-400 absolute left-4 top-3.5" />
                   <input
                     type="email"
-                    placeholder="email@college.edu.in"
+                    placeholder="email@college.edu.in or .in"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -309,7 +309,7 @@ export const Auth: React.FC = () => {
                   />
                 </div>
                 {!isLogin && (
-                  <p className="text-[10px] font-bold text-slate-400 mt-0.5">Domain must strictly end with <span className="text-brand-500">.edu.in</span></p>
+                  <p className="text-[10px] font-bold text-slate-400 mt-0.5">Domain must strictly end with <span className="text-brand-500">.edu.in or .in</span></p>
                 )}
               </div>
 

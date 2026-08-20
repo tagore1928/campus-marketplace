@@ -26,7 +26,14 @@ export const deobfuscateUid = (obfuscated: string): string => {
       base64 += '=';
     }
     const decoded = atob(base64);
-    return rot13(decoded);
+    const rotated = rot13(decoded);
+    
+    // Standard Firebase UIDs are 28 characters long and alphanumeric.
+    const isAlphanumeric = /^[a-zA-Z0-9]+$/.test(rotated);
+    if (rotated.length === 28 && isAlphanumeric) {
+      return rotated;
+    }
+    return obfuscated;
   } catch (err) {
     console.error('Failed to deobfuscate UID:', err);
     return obfuscated;

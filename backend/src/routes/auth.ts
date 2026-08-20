@@ -57,15 +57,15 @@ router.post('/profile', authRateLimiter, verifyToken, async (req: AuthRequest, r
 
   const { college, isCustomCollege, name } = req.body;
 
-  // Domain validation: Restrict standard registration explicitly to college emails ending in .edu.in (except admin)
+  // Domain validation: Restrict standard registration explicitly to college emails ending in .edu.in or .in (except admin)
   const email = user.email || '';
-  const isEduIn = email.toLowerCase().endsWith('.edu.in');
+  const isValidDomain = email.toLowerCase().endsWith('.edu.in') || email.toLowerCase().endsWith('.in');
   const isAdminEmail = email.toLowerCase() === 'campusmarketadmin@gmail.com';
   
-  if (!isEduIn && !isAdminEmail) {
+  if (!isValidDomain && !isAdminEmail) {
     return res.status(400).json({
       error: 'Invalid Domain',
-      message: 'Registration is restricted explicitly to college email addresses ending in .edu.in'
+      message: 'Registration is restricted explicitly to college email addresses ending in .edu.in or .in'
     });
   }
 

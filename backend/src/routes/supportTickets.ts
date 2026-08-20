@@ -12,8 +12,8 @@ router.post('/', async (req, res) => {
   }
 
   // Basic email validation
-  if (!email.toLowerCase().endsWith('.edu.in') && email.toLowerCase() !== 'campusmarketadmin@gmail.com') {
-    return res.status(400).json({ error: 'Bad Request', message: 'You must provide a valid college email address ending in .edu.in.' });
+  if (!email.toLowerCase().endsWith('.edu.in') && !email.toLowerCase().endsWith('.in') && email.toLowerCase() !== 'campusmarketadmin@gmail.com') {
+    return res.status(400).json({ error: 'Bad Request', message: 'You must provide a valid college email address ending in .edu.in or .in.' });
   }
 
   try {

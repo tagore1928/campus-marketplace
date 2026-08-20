@@ -54,7 +54,7 @@ export const About: React.FC = () => {
             Trusted Exchanges
           </h3>
           <p className="text-xs text-slate-550 dark:text-slate-400 leading-relaxed font-semibold">
-            We enforce strict `.edu.in` boundaries, eliminating anonymous bots and ensuring a community you can trust.
+            We enforce strict `.edu.in` or `.in` boundaries, eliminating anonymous bots and ensuring a community you can trust.
           </p>
         </div>
       </div>

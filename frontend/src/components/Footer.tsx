@@ -129,7 +129,7 @@ export const Footer: React.FC = () => {
               />
               <input
                 type="email"
-                placeholder="College Email (.edu.in)"
+                placeholder="College Email (.edu.in or .in)"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}

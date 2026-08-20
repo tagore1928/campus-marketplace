@@ -30,7 +30,7 @@ export const Privacy: React.FC = () => {
                 Email & Account Verification
               </h3>
               <p className="text-xs text-slate-550 dark:text-slate-400 leading-relaxed mt-1 font-semibold">
-                To guarantee safety, we restrict registration to university domain emails ending in `.edu.in`. This isolates all data interactions to authentic university attendees.
+                To guarantee safety, we restrict registration to university domain emails ending in `.edu.in` or `.in`. This isolates all data interactions to authentic university attendees.
               </p>
             </div>
           </div>

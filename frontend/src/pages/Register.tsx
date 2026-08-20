@@ -23,7 +23,7 @@ const Register = () => {
     }
   };
 
-  const emailValid = email.endsWith('.edu.in');
+  const emailValid = email.endsWith('.edu.in') || email.endsWith('.in');
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -41,7 +41,7 @@ const Register = () => {
           />
         </label>
         <label className="block mb-2">
-          Email (must end with .edu.in)
+          Email (must end with .edu.in or .in)
           <input
             type="email"
             value={email}
@@ -49,7 +49,7 @@ const Register = () => {
             required
             className="mt-1 w-full border rounded p-2"
           />
-          {!emailValid && email && <p className="text-sm text-red-500">Email must end with .edu.in</p>}
+          {!emailValid && email && <p className="text-sm text-red-500">Email must end with .edu.in or .in</p>}
         </label>
         <label className="block mb-2">
           Password (min 8 chars)

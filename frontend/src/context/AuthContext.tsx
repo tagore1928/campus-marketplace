@@ -160,13 +160,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setLoading(true);
     
     // Explicit domain checks
-    if (!email.toLowerCase().endsWith('.edu.in') && email.toLowerCase() !== 'campusmarketadmin@gmail.com') {
+    if (!email.toLowerCase().endsWith('.edu.in') && !email.toLowerCase().endsWith('.in') && email.toLowerCase() !== 'campusmarketadmin@gmail.com') {
       setLoading(false);
-      throw new Error('Registration is restricted. You must register with an email address ending in .edu.in.');
+      throw new Error('Registration is restricted. You must register with an email address ending in .edu.in or .in.');
     }
 
     try {
-      // Create user in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       
       // Update displayName
